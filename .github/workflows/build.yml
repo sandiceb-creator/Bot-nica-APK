@@ -1,40 +1,25 @@
-name: Crear APK de Android
+name: Diagnostico APK
 on:
   workflow_dispatch:
 jobs:
-  build:
+  b:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: Generar APK via PWABuilder
-        run: |
-          curl -s -X POST "https://pwabuilder-cloudapk.azurewebsites.net/generateAppPackage" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "packageId": "com.botanica.guianatural",
-              "host": "teal-queijadas-c4b52f.netlify.app",
-              "startUrl": "/b2.html",
-              "name": "Botanica - Guia Natural",
-              "launcherName": "Botanica",
-              "themeColor": "#2d6a4f",
-              "backgroundColor": "#ffffff",
-              "enableNotifications": false,
-              "iconUrl": "https://teal-queijadas-c4b52f.netlify.app/icon-512.png",
-              "webManifestUrl": "https://teal-queijadas-c4b52f.netlify.app/manifest.json",
-              "fallbackType": "customtabs",
-              "signingMode": "none",
-              "appVersion": "1.0.0",
-              "appVersionCode": 1,
-              "display": "standalone",
-              "orientation": "default"
-            }' \
-            --output botanica-android.zip \
-            --max-time 300
-          ls -la botanica-android.zip || echo "No se genero el zip"
-
-      - name: Subir APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/setup-node@v3
         with:
-          name: botanica-android
-          path: botanica-a
+          node-version: 18
+      - uses: android-actions/setup-android@v3
+      - name: Ver Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls $ANDROID_HOME/build-tools/ || echo "Sin build tools"
+          java -version
+      - name: Instalar Bubblewrap
+        run: npm i -g @bubblewrap/cli && bubblewrap --version
+      - name: Crear keystore
+        run: keytool -genkey -v -keystore k.jks -alias a -keyalg RSA -keysize 2048 -validity 9999 -storepass p123 -keypass p123 -dname "CN=B,O=B,C=ES"
+      - name: Crear manifest
+        run: printf '{"packageId":"com.botanica.guianatural","host":"teal-queijadas-c4b52f.netlify.app","startUrl":"/b2.html","name":"Botanica","launcherName":"Botanica","display":"standalone","themeColor":"#2d6a4f","themeColorDark":"#2d6a4f","backgroundColor":"#fff","enableNotifications":false,"shortcuts":[],"iconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","maskableIconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","monochromeIconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","splashScreenFadeOutDuration":300,"generatorApp":"bubblewrap-cli","webManifestUrl":"https://teal-queijadas-c4b52f.netlify.app/manifest.json","fallbackType":"customtabs","features":{},"signingKey":{"path":"../k.jks","alias":"a"},"appVersionName":"1.0","appVersionCode":1,"orientation":"default"}' > twa-manifest.json && cat twa-manifest.json
+      - name: Compilar APK
+        run: BUBBLEWRAP_KEYSTORE_PASSWORD=p123 BUBBLEWRAP_KEY_PASSWORD=p123 bubblewrap build --skipPwaValidation
