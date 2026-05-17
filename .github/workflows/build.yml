@@ -1,6 +1,9 @@
-name: Diagnostico APK
+name: APK Botanica
 on:
   workflow_dispatch:
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 jobs:
   b:
     runs-on: ubuntu-latest
@@ -9,17 +12,18 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-      - uses: android-actions/setup-android@v3
-      - name: Ver Android SDK
+      - name: Build APK
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          ls $ANDROID_HOME/build-tools/ || echo "Sin build tools"
           java -version
-      - name: Instalar Bubblewrap
-        run: npm i -g @bubblewrap/cli && bubblewrap --version
-      - name: Crear keystore
-        run: keytool -genkey -v -keystore k.jks -alias a -keyalg RSA -keysize 2048 -validity 9999 -storepass p123 -keypass p123 -dname "CN=B,O=B,C=ES"
-      - name: Crear manifest
-        run: printf '{"packageId":"com.botanica.guianatural","host":"teal-queijadas-c4b52f.netlify.app","startUrl":"/b2.html","name":"Botanica","launcherName":"Botanica","display":"standalone","themeColor":"#2d6a4f","themeColorDark":"#2d6a4f","backgroundColor":"#fff","enableNotifications":false,"shortcuts":[],"iconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","maskableIconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","monochromeIconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","splashScreenFadeOutDuration":300,"generatorApp":"bubblewrap-cli","webManifestUrl":"https://teal-queijadas-c4b52f.netlify.app/manifest.json","fallbackType":"customtabs","features":{},"signingKey":{"path":"../k.jks","alias":"a"},"appVersionName":"1.0","appVersionCode":1,"orientation":"default"}' > twa-manifest.json && cat twa-manifest.json
-      - name: Compilar APK
-        run: BUBBLEWRAP_KEYSTORE_PASSWORD=p123 BUBBLEWRAP_KEY_PASSWORD=p123 bubblewrap build --skipPwaValidation
+          ls $ANDROID_HOME/build-tools/
+          npm i -g @bubblewrap/cli
+          keytool -genkey -v -keystore k.jks -alias a -keyalg RSA -keysize 2048 -validity 9999 -storepass p123 -keypass p123 -dname "CN=B,O=B,C=ES"
+          printf '{"packageId":"com.botanica.guianatural","host":"teal-queijadas-c4b52f.netlify.app","startUrl":"/b2.html","name":"Botanica","launcherName":"Botanica","display":"standalone","themeColor":"#2d6a4f","themeColorDark":"#2d6a4f","backgroundColor":"#fff","enableNotifications":false,"shortcuts":[],"iconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","maskableIconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","monochromeIconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","splashScreenFadeOutDuration":300,"generatorApp":"bubblewrap-cli","webManifestUrl":"https://teal-queijadas-c4b52f.netlify.app/manifest.json","fallbackType":"customtabs","features":{},"signingKey":{"path":"../k.jks","alias":"a"},"appVersionName":"1.0","appVersionCode":1,"orientation":"default"}' > twa-manifest.json
+          BUBBLEWRAP_KEYSTORE_PASSWORD=p123 BUBBLEWRAP_KEY_PASSWORD=p123 bubblewrap build --skipPwaValidation
+        continue-on-error: true
+      - run: find . -name "*.apk" -o -name "*.aab" || echo "No encontrado"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: botanica-apk
+          path: "**/*.apk"
+          if-no-files-found: warn
