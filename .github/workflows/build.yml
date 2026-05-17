@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Crear APK de Android
 on:
   workflow_dispatch:
 jobs:
@@ -6,28 +6,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
-      - name: Create TWA manifest
+
+      - name: Generar APK via PWABuilder
         run: |
-          mkdir -p app && cd app
-          cat > twa-manifest.json << 'EOF'
-          {"packageId":"com.botanica.guianatural","host":"teal-queijadas-c4b52f.netlify.app","startUrl":"/b2.html","name":"Botanica - Guia Natural","launcherName":"Botanica","themeColor":"#2d6a4f","backgroundColor":"#ffffff","enableNotifications":false,"shortcuts":[],"iconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","splashScreenFadeOutDuration":300,"generatorApp":"bubblewrap-cli","webManifestUrl":"https://teal-queijadas-c4b52f.netlify.app/manifest.json","fallbackType":"customtabs","features":{},"signingKey":{"path":"./android.keystore","alias":"android"},"appVersionName":"1.0.0","appVersionCode":1,"orientation":"default","display":"standalone"}
-          EOF
-      - name: Build APK
-        run: |
-          cd app
-          bubblewrap build --skipPwaValidation || echo 'Build attempted'
-        continue-on-error: true
-      - uses: actions/upload-artifact@v4
+          curl -s -X POST "https://pwabuilder-cloudapk.azurewebsites.net/generateAppPackage" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "packageId": "com.botanica.guianatural",
+              "host": "teal-queijadas-c4b52f.netlify.app",
+              "startUrl": "/b2.html",
+              "name": "Botanica - Guia Natural",
+              "launcherName": "Botanica",
+              "themeColor": "#2d6a4f",
+              "backgroundColor": "#ffffff",
+              "enableNotifications": false,
+              "iconUrl": "https://teal-queijadas-c4b52f.netlify.app/icon-512.png",
+              "webManifestUrl": "https://teal-queijadas-c4b52f.netlify.app/manifest.json",
+              "fallbackType": "customtabs",
+              "signingMode": "none",
+              "appVersion": "1.0.0",
+              "appVersionCode": 1,
+              "display": "standalone",
+              "orientation": "default"
+            }' \
+            --output botanica-android.zip \
+            --max-time 300
+          ls -la botanica-android.zip || echo "No se genero el zip"
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
         with:
-          name: botanica-apk
-          path: |
-            app/*.apk
+          name: botanica-android
+          path: botanica-android.zip
+          if-no-files-found: warn
