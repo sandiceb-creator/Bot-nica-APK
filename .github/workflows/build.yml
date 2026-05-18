@@ -21,7 +21,9 @@ jobs:
           mkfifo /tmp/p
           (while true; do echo Y; sleep 2; done) > /tmp/p &
           BUBBLEWRAP_KEYSTORE_PASSWORD=pass123 BUBBLEWRAP_KEY_PASSWORD=pass123 bubblewrap build --skipPwaValidation < /tmp/p
-          find . -name "*.apk" -o -name "*.aab"
+          find . -name "*.apk" -o -name "*.aab
+                    BTOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | tail -1)
+          $ANDROID_SDK_ROOT/build-tools/$BTOOLS/apksigner sign --ks k.jks --ks-pass pass:pass123 --key-pass pass:pass123 --out botanica-signed.apk $(find . -name "app-release-unsigned-aligned.apk" | head -1)
         continue-on-error: true
       - uses: actions/upload-artifact@v4
         with:
