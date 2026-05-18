@@ -12,7 +12,7 @@ jobs:
           npm i -g @bubblewrap/cli
           keytool -genkey -v -keystore k.jks -alias a -keyalg RSA -keysize 2048 -validity 9999 -storepass pass123 -keypass pass123 -dname "CN=B,O=B,C=ES"
           printf '{"packageId":"com.botanica.guianatural","host":"teal-queijadas-c4b52f.netlify.app","startUrl":"/b2.html","name":"Botanica","launcherName":"Botanica","display":"standalone","themeColor":"#2d6a4f","themeColorDark":"#2d6a4f","backgroundColor":"#fff","enableNotifications":false,"shortcuts":[],"iconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","maskableIconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","monochromeIconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","splashScreenFadeOutDuration":300,"generatorApp":"bubblewrap-cli","webManifestUrl":"https://teal-queijadas-c4b52f.netlify.app/manifest.json","fallbackType":"customtabs","features":{},"signingKey":{"path":"../k.jks","alias":"a"},"appVersionName":"1.0","appVersionCode":1,"orientation":"default"}' > twa-manifest.json
-          mkdir -p ~/.bubblewrap && printf '{"jdkPath":"/usr/lib/jvm/java-17-openjdk-amd64","androidSdkPath":"%s"}' "$ANDROID_HOME" > ~/.bubblewrap/config.json
+      echo "SDK: $ANDROID_HOME $ANDROID_SDK_ROOT" && which adb mkdir -p ~/.bubblewrap && printf '{"jdkPath":"/usr/lib/jvm/java-17-openjdk-amd64","androidSdkPath":"%s"}' "$ANDROID_HOME" > ~/.bubblewrap/config.json
           BUBBLEWRAP_KEYSTORE_PASSWORD=pass123 BUBBLEWRAP_KEY_PASSWORD=pass123 bubblewrap build --skipPwaValidation
           find . -name "*.apk" -o -name "*.aab"
         continue-on-error: true
