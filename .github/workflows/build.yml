@@ -21,6 +21,8 @@ jobs:
           mkfifo /tmp/p
           (while true; do echo Y; sleep 2; done) > /tmp/p &
           BUBBLEWRAP_KEYSTORE_PASSWORD=pass123 BUBBLEWRAP_KEY_PASSWORD=pass123 bubblewrap build --skipPwaValidation < /tmp/p
+         AAB=$(find . -name "app-release.aab" | head -1) && cp $AAB botanica.aab
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore k.jks -storepass pass123 -keypass pass123 botanica.aab a
           find . -name "*.apk" -o -name "*.aab
                     BTOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | tail -1)
           $ANDROID_SDK_ROOT/build-tools/$BTOOLS/apksigner sign --ks k.jks --ks-pass pass:pass123 --key-pass pass:pass123 --out botanica-signed.apk $(find . -name "app-release-unsigned-aligned.apk" | head -1)
