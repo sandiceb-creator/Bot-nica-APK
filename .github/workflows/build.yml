@@ -1,20 +1,31 @@
 name: APK Botanica
 on:
   workflow_dispatch:
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 jobs:
   b:
     runs-on: ubuntu-latest
+    container: mingc/android-build-box:latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - uses: android-actions/setup-android@v3
       - name: Build APK
         run: |
           npm i -g @bubblewrap/cli
           keytool -genkey -v -keystore k.jks -alias a -keyalg RSA -keysize 2048 -validity 9999 -storepass pass123 -keypass pass123 -dname "CN=B,O=B,C=ES"
           printf '{"packageId":"com.botanica.guianatural","host":"teal-queijadas-c4b52f.netlify.app","startUrl":"/b2.html","name":"Botanica","launcherName":"Botanica","display":"standalone","themeColor":"#2d6a4f","themeColorDark":"#2d6a4f","backgroundColor":"#fff","enableNotifications":false,"shortcuts":[],"iconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","maskableIconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","monochromeIconUrl":"https://teal-queijadas-c4b52f.netlify.app/icon-512.png","splashScreenFadeOutDuration":300,"generatorApp":"bubblewrap-cli","webManifestUrl":"https://teal-queijadas-c4b52f.netlify.app/manifest.json","fallbackType":"customtabs","features":{},"signingKey":{"path":"./k.jks","alias":"a"},"appVersionName":"1.0","appVersionCode":1,"orientation":"default"}' > twa-manifest.json
-          mkdir -p ~/.bubblewrap && printf '{"jdkPath":"%s","androidSdkPath":"%s"}' "$JAVA_HOME" "$ANDROID_SDK_ROOT" > ~/
+          mkdir -p ~/.bubblewrap && printf '{"jdkPath":"%s","androidSdkPath":"%s"}' "$JAVA_HOME" "$ANDROID_SDK_ROOT" > ~/.bubblewrap/config.json
+          mkfifo /tmp/p
+          (while true; do echo Y; sleep 2; done) > /tmp/p &
+          BUBBLEWRAP_KEYSTORE_PASSWORD=pass123 BUBBLEWRAP_KEY_PASSWORD=pass123 bubblewrap build --skipPwaValidation < /tmp/p
+          AAB=$(find . -name "*.aab" | head -1)
+          if [ -n "$AAB" ]; then cp $AAB botanica.aab && jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore k.jks -storepass pass123 -keypass pass123 botanica.aab a; fi
+          BTOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | tail -1)
+          $ANDROID_SDK_ROOT/build-tools/$BTOOLS/apksigner sign --ks k.jks --ks-pass pass:pass123 --key-pass pass:pass123 --out botanica-signed.apk $(find . -name "app-release-unsigned-aligned.apk" | head -1) || true
+          find . -name "*.apk" -o -name "*.aab"
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: botanica-apk
+          path: |
+            botanica-signed.apk
+            botanica.aab
+          if-no-files-found: warn
